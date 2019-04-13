@@ -1,5 +1,8 @@
 'use strict';
 
+const { Server } = require('ws');
+const ws = new Server({port : 2345});
+
 const TriggerEmitter = require('./lib/triggerEmitter')
 
 const { Client } = require('pg');
@@ -30,6 +33,15 @@ client.on('notification', message => {
 
 const triggerEmitter = TriggerEmitter.connect(client);
 
-triggerEmitter.on('new_friend', message => {
-    console.log(`Made a new friend named ${message.name}, aged ${message.age}`);
-})
+
+ws.on('connection', socket => {
+    console.log('Starting websockets server');
+    triggerEmitter.on('new_friend', message => {
+        console.log(`Made a new friend named ${message.name}, aged ${message.age}`);
+        ws.clients.forEach(client => {
+            client.send(JSON.stringify(message));
+        });
+    });
+});
+
+
